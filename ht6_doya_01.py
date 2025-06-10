@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import networkx as nx
 from collections import deque
+import heapq
 
 # 🔹 Лінії метро
 blue_line = [
@@ -65,6 +66,31 @@ label_offsets = {
     "Хрещатик": (0.5, 0.2), "Майдан Незалежності": (1, -0.3),
     "Палац спорту": (0.7, 0), "Площа Льва Толстого": (-1.0, -0.1)
 }
+
+# Функція для пошуку найкоротших шляхів за допомогою алгоритму Дейкстри
+# heapq	для швидкісти - Складність O(log n) VS O(n) для звичайного списку
+def dijkstra_all_paths(graph, start):
+
+    distances = {node: float('inf') for node in graph.nodes}
+    distances[start] = 0
+    paths = {node: [] for node in graph.nodes}
+    paths[start] = [start]
+
+    priority_queue = [(0, start)]
+
+    while priority_queue:
+        current_distance, current_node = heapq.heappop(priority_queue)
+
+        for neighbor in graph.neighbors(current_node):
+            weight = graph[current_node][neighbor].get('weight', 1)
+            distance = current_distance + weight
+
+            if distance < distances[neighbor]:
+                distances[neighbor] = distance
+                paths[neighbor] = paths[current_node] + [neighbor]
+                heapq.heappush(priority_queue, (distance, neighbor))
+
+    return distances, paths
 
 # Функції для пошуку шляхів за допомогою DFS
 def dfs_path(graph, start, goal, path=None, visited=None):
@@ -202,14 +228,13 @@ print("Шлях за допомогою BFS:", " -> ".join(bfs_result) if bfs_re
 for u, v in transfers:
     GKM.add_edge(u, v, weight=3)
 
-# Використання Дейкстри - отримаємо найкоротші відстані між усіма парами вершин
-# У завданні не вказано, що алгоритм Дейкстри потрібно реалізувати у вигляді окремої функції :)
-dijkstra_paths_real = dict(nx.all_pairs_dijkstra_path_length(GKM, weight='weight'))
 
 # Приклад: отримати найкоротший час між двома станціями
 start = "Теремки"
 end = "Лісова"
-shortest_time = dijkstra_paths_real[start][end]
+shortest_time_start, route = dijkstra_all_paths(GKM, start)
+shortest_time = shortest_time_start[end]
 
 print("...\n")
 print(f"Час поїздки з {start} до {end} за Дейкстрою: {shortest_time} хв")
+print("Маршрут за Дейкстрою:", " -> ".join(route[end]) if end in route else "Маршрут не знайдено")
